@@ -1,0 +1,19 @@
+services:
+  bitcoind:
+    image: bitcoin/bitcoin:29.0
+    command:
+      - -regtest=1
+      - -server=1
+      - -txindex=1
+      - -fallbackfee=0.0002
+      - -printtoconsole=1
+      - -rpcuser=qmto
+      - -rpcpassword=qmto-regtest-only
+    tmpfs:
+      - /home/bitcoin/.bitcoin
+    healthcheck:
+      test: ["CMD", "bitcoin-cli", "-regtest", "-rpcuser=qmto", "-rpcpassword=qmto-regtest-only", "getblockchaininfo"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
