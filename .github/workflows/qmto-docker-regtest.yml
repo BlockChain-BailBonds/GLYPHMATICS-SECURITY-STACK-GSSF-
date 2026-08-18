@@ -1,0 +1,41 @@
+name: QMTO Docker Regtest
+
+on:
+  push:
+    branches:
+      - agent/qmto-docker-regtest
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  qmto-regtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run QMTO proof scenarios
+        run: python qmto-ci/qmto_ci.py proof
+
+      - name: Pull pinned Bitcoin Core image
+        run: docker pull bitcoin/bitcoin:29.0
+
+      - name: Start isolated Bitcoin Core regtest
+        run: docker compose -f qmto-ci/docker-compose.yml up -d --wait
+
+      - name: Run real Bitcoin Core QMTO integration
+        run: python qmto-ci/qmto_ci.py integration
+
+      - name: Capture Bitcoin Core logs on failure
+        if: failure()
+        run: docker compose -f qmto-ci/docker-compose.yml logs --no-color || true
+
+      - name: Tear down isolated regtest
+        if: always()
+        run: docker compose -f qmto-ci/docker-compose.yml down -v --remove-orphans || true
